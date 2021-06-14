@@ -8,45 +8,39 @@ Feature: Contact Form operation & client-side verification
   ** The email is sent
   ** When the email is not sent
 
-#  $nameRegex = "[A-Za-z0-9 .\-]+";
-#  $maxNameLength = 40;
-#  $maxEmailLength = 50;
-#  $maxSubjectLength = 50;
-#  $msgMaxLen = 5000;
-#  $msgMinLen = 10;
+# Rule: The form starts life in a non-sendable state
+  Scenario: Initial state of page
+    When I navigate to the page "contact"
+    Then the page is fully drawn
+    And the first heading is "Contact"
+    And the submit button is disabled
 
 #  Rule: If a message is successfully sent, the user knows it
-  #ToDo: add in some sort of API testing that finds the sent message, and deletes it. Until then don't have this as part of the CD suite
-#  Scenario: Send a message
-#  As this is the first scenario to be run, if is succeeds, it give confidence that the following failures are not false negatives
-#    Given I navigate to the page "contact"
-#    And the page is fully drawn
-#    And the first heading is "Contact"
-#    When I enter the following data
-#      | name     | Donald Duck                                                                      |
-#      | address1 | alpha@bet1asdfghbet2asdfghbet3asdfghbet4asdfgh.com                               |
-#      | address2 | alpha@bet1asdfghbet2asdfghbet3asdfghbet4asdfgh.com                               |
-#      | subject  | This is a test message, please delete it                                         |
-#      | message  | If you don't delete it, it will just clutter up you inbox and you won't be happy |
-#    And I send the message
-#    And an attempt to send is made
-#    Then the form is not visible
-#    And confirmation of sending is shown
-#    And the sending was successful
+  Scenario: Send a message
+  As this is the first scenario to be run, if is succeeds, it give confidence that the following failures are not false negatives
+    Given I navigate to the page "contact"
+    When I enter the following data
+      | name     | Donald Duck                                                                      |
+      | address1 | alpha@bet1asdfghbet2asdfghbet3asdfghbet4asdfgh.com                               |
+      | address2 | alpha@bet1asdfghbet2asdfghbet3asdfghbet4asdfgh.com                               |
+      | subject  | This is a test message, please delete it                                         |
+      | message  | If you don't delete it, it will just clutter up you inbox and you won't be happy |
+    And I send the message
+    Then confirmation of sending is shown
+    And the sending was successful
+    And the submit button is disabled
 
 #  Rule: If the information supplied by the user is inadequate or illegal, the message will not be sent
   Scenario Outline: Partially fill the form
   Using values (except for the missing value) that we saw work in the previous scenario
     Given I navigate to the page "contact"
-    And the page is fully drawn
     When I enter the following data
       | name     | <name>     |
       | address1 | <address1> |
       | address2 | <address2> |
       | subject  | <subject>  |
       | message  | <message>  |
-    And I send the message
-    Then the message is not sent
+    Then the submit button is disabled
     Examples:
       | name        | address1      | address2      | subject                                  | message                                                                          |
       |             | pi@staker.com | pi@staker.com | This is a test message, please delete it | If you don't delete it, it will just clutter up you inbox and you won't be happy |
@@ -55,23 +49,22 @@ Feature: Contact Form operation & client-side verification
       | Donald Duck | pi@staker.com | pi@staker.com |                                          | If you don't delete it, it will just clutter up you inbox and you won't be happy |
       | Donald Duck | pi@staker.com | pi@staker.com | This is a test message, please delete it |                                                                                  |
 
+# Rule: The form will only allow the user to enter the allowed number characters into the each field
   Scenario: Provide over-long email addresses
-  The will be truncated at the max length. Of course this could mean that the address is also syntactically incorrect
+  const emailLengthMax = 50
     Given I navigate to the page "contact"
-    And the page is fully drawn
     When I enter the following data
-      | name     |                                                     |
-      | address1 | alpha@bet1asdfghbet2asdfghbet3asdfghbet4asdfghi.com |
-      | address2 | alpha@bet1asdfghbet2asdfghbet3asdfghbet4asdfghi.com |
-      | subject  |                                                     |
-      | message  |                                                     |
+      | name     |                                                      |
+      | address1 | alpha@bet1asdfghbet2asdfghbet3asdfghbet4asdfghi.com  |
+      | address2 | alpha@bet1asdfghbet2asdfghbet3asdfghbet4asdfghiq.com |
+      | subject  |                                                      |
+      | message  |                                                      |
     Then the email1 field contains 50 characters
-    Then the email2 field contains 50 characters
+    And the email2 field contains 50 characters
 
   Scenario Outline: Provide an over-long name
-  The field will truncate at the allowed length
+  const nameLengthMax = 40
     Given I navigate to the page "contact"
-    And the page is fully drawn
     When I enter the following data
       | name     | <name> |
       | address1 |        |
@@ -84,9 +77,8 @@ Feature: Contact Form operation & client-side verification
       | Donald Duck Donald Duck Donald Donald Qua |
 
   Scenario: Provide overlong subject
-  This is verifying that the form will not submit if the offered values do not suit the parameters
+  const subjectLengthMax = 50
     Given I navigate to the page "contact"
-    And the page is fully drawn
     When I enter the following data
       | name     |                                                     |
       | address1 |                                                     |
@@ -96,100 +88,106 @@ Feature: Contact Form operation & client-side verification
     Then the subject field contains 50 characters
 
   Scenario: Provide overlong message
-  The form will truncate
+  const msgLengthMax = 5000
     Given I navigate to the page "contact"
-    And the page is fully drawn
     When I enter a message 5001 chars long
     Then the message field contains 5000 characters
 
+# Rule: The use has to enter the exact same email address twice
+# in the hope that this increases the probability that they make no typo
   Scenario Outline: Provide non-matching email addresses
-  These should be rejected when the send button is clicked
     Given I navigate to the page "contact"
-    And the page is fully drawn
     When I enter the following data
       | name     |            |
       | address1 | <address1> |
       | address2 | <address2> |
       | subject  |            |
       | message  |            |
-    And I send the message
-    Then the message is not sent
+    Then the submit button is disabled
     Examples:
       | address1       | address2       |
       | pi@staker.com  | pi@skater.com  |
       | alpha@beta.com | beta@alpha.com |
 
-  Scenario Outline: Provide an illegal name
-  The form allows the entry of illegal chars but will not submit
+  Scenario Outline: Provide an illegal entries
+  The form closely constrains the range of allowed chars in fields in an attempt to reduce 'trolling'
+  This is not an exhaustive test of bad chars, just of the principle - server side filtration is the back-stop
+  Data is based on the 'good' data seen in the successful send
+  Rely on th browser to enforce email addresses verification
+  const nameRegexp = /^[a-z0-9., -]+$/i
+  const subjectRegexp = /^[£a-z0-9., -]+$/i
+  const msgRegexp = /^[£a-z0-9., -/?/)(\n]+$/i
     Given I navigate to the page "contact"
-    And the page is fully drawn
     When I enter the following data
-      | name     | <name> |
-      | address1 |        |
-      | address2 |        |
-      | subject  |        |
-      | message  |        |
-    And I send the message
-    Then the message is not sent
+      | name     | <name>        |
+      | address1 | pi@staker.com |
+      | address2 | pi@staker.com |
+      | subject  | <subject>     |
+      | message  | <message>     |
+    Then the submit button is disabled
     Examples:
-      | name         |
-      | Donald Duck! |
+      | name         | subject                                  | message                                                                          |
+      | Donald Duck! | This is a test message, please delete it | If you don't delete it, it will just clutter up you inbox and you won't be happy |
+      | Donald Duck  | This is a test message? please delete it | If you don't delete it, it will just clutter up you inbox and you won't be happy |
+      | Donald Duck  | This is a test message, please delete it | If you don* delete it, it will just clutter up you inbox and you won't be happy  |
 
   Scenario Outline: Provide too-short message
   These should be rejected when the send button is clicked
     Given I navigate to the page "contact"
-    And the page is fully drawn
     When I enter the following data
       | name     | Duckal Dond        |
       | address1 | ducky@ducksrus.com |
-      | address2 | ducky@ducksrus.    |
+      | address2 | ducky@ducksrus.com |
       | subject  | Now is the time    |
       | message  | <message>          |
-    And I send the message
-    Then the message is not sent
+    Then the submit button is disabled
     Examples:
       | message   |
       | woof woof |
       | alphabets |
 
- # Rule: There is a char-counter that lets the user know if how many chars they can enter into the message field
-  Scenario: watch the message field's character counter
-  Slightly unusual when/then, but you can see what is going on
+# Rule: There is a char-counter attached to the message field
+  Scenario: Watch the message field's character counter
+  Slightly distasteful layout of the when/then, but you can see what is going on
     When I navigate to the page "contact"
-    And the page is fully drawn
-    Then the message counter field contains 5000
+    Then the message counter field contains "5000"
     When I enter a message 30 chars long
-    Then the message counter field contains 4970
+    Then the message counter field contains "4,970"
     When I enter a message 1 chars long
-    Then the message counter field contains 4969
+    Then the message counter field contains "4,969"
     When I enter a message 4000 chars long
-    Then the message counter field contains 969
-    When I enter a message 1000 chars long
-    Then the message counter field contains 0
+    Then the message counter field contains "969"
+    When I enter a message 969 chars long
+    Then the message counter field contains "0"
     And the message field contains 5000 characters
 
- # Rule: The contact page may have its subject pre-filled
-  Scenario Outline: simulate invocation with pre-set subject
+# Rule: The contact page may have its subject pre-filled
+  Scenario Outline: Pre-set the contents of the subject field
+  Check also, that the processing of the of the parameter does not break the drawing of the form in some other way
     When I navigate to the page "contact?subject=<testSubject>"
     And the page is fully drawn
     Then the subject field contains "<expectedSubjectContents>"
     Examples:
-      | testSubject      | expectedSubjectContents |
-      | who's your daddy | who's your daddy        |
+      | testSubject     | expectedSubjectContents |
+      | whos your daddy | whos your daddy         |
 
-  Scenario Outline: simulate invocation with other request parameters don't break
+  Scenario Outline: Try to break the form by entering malformed parameters
     When I navigate to the page "contact?<testSubject>"
     And the page is fully drawn
     Then the subject field contains "<expectedSubjectContents>"
+    And the message field contains 0 characters
     Examples:
-      | testSubject                              | expectedSubjectContents |
-      | subjict=who's your daddy                 |                         |
-      | subject=arfle farfle pippik&diesease=flu | arfle farfle pippik     |
+      | testSubject                             | expectedSubjectContents |
+      | subjict=whos your daddy                 |                         |
+      | subject=arfle farfle pippik&disease=flu | arfle farfle pippik     |
 
-  Scenario Outline: excessive numbers of chars in the subject preset are trimmed
+# Rule: illegal chars can not be smuggled in to the subject via the pre-fill
+  Scenario Outline: Try to put too many chars in the subject via the pre-set of subject
     When I navigate to the page "contact?subject=<testSubject>"
     And the page is fully drawn
     Then the subject field contains "<expectedSubjectContents>"
     Examples:
-      | testSubject                                                 | expectedSubjectContents                            |
-      | arfle farfle pippik arfle farfle pippik arfle farfle pippik | arfle farfle pippik arfle farfle pippik arfle farf |
+      | testSubject                                                 | expectedSubjectContents                           |
+      | arfle farfle pippik arfle farfle pippik arfle farfle pippik | arfle farfle pippik arfle farfle pippik arfle far |
+
+# rely on the proof that illegal subject field contents are not sent

@@ -12,5 +12,6 @@ Feature: Friendly URLs
     Then the page title is ""
     Examples:
       | url             |
+      |                 |
       | /engine-trouble |
       | /pigs/are/great |

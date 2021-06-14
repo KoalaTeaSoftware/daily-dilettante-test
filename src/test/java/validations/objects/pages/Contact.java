@@ -3,6 +3,10 @@ package validations.objects.pages;
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+
+import java.time.Duration;
 
 public class Contact extends CommonPage {
     /**
@@ -17,24 +21,26 @@ public class Contact extends CommonPage {
 
     final public String momentOfBirth;
 
-    @FindBy(id = "resultDisplay")
+    @FindBy(id = "server-feedback")
     WebElement sendingResultsWindow;
     @FindBy(id = "name")
     WebElement nameField;
-    @FindBy(id = "emailAddress")
+    @FindBy(id = "address1")
     WebElement addressField1;
-    @FindBy(id = "emailAddressConf")
+    @FindBy(id = "address2")
     WebElement addressField2;
     @FindBy(id = "subject")
     WebElement subjectField;
-    @FindBy(id = "yourMessage")
+    @FindBy(id = "message")
     WebElement messageField;
-    @FindBy(name = "sendMsg")
+    @FindBy(id = "submitButton")
     WebElement sendButton;
     @FindBy(tagName = "form")
     WebElement form;
 
+    // force this locator to be more dynamic
     final By messageCharCount = By.id("letterCount");
+    final By stamp = By.id("whadyano");
 
     public Contact(WebDriver webDriver) {
         super(webDriver);
@@ -45,7 +51,7 @@ public class Contact extends CommonPage {
     public String getTimestamp() {
         // find the value right now, don't depend on the page factory
         // this always seems slow, maybe because of the JavaScript on the page, I don't know
-        return myDriver.findElement(By.id("stamp")).getAttribute("textContent");
+        return myDriver.findElement(stamp).getAttribute("value");
     }
 
     public void setNameField(String nameField) {
@@ -68,7 +74,6 @@ public class Contact extends CommonPage {
         if (messageField != null) this.messageField.sendKeys(addTab(messageField));
     }
 
-
     public String getNameField() { return nameField.getAttribute("value"); }
 
     public String getAddressField1() { return addressField1.getAttribute("value"); }
@@ -79,21 +84,35 @@ public class Contact extends CommonPage {
 
     public String getMessageField() { return messageField.getAttribute("value"); }
 
-    public int getMessageCharCount() {
-        return Integer.parseInt(myDriver.findElement(messageCharCount).getAttribute("innerHTML"));
+    public String getMessageCharCount() {
+        return myDriver.findElement(messageCharCount).getAttribute("innerHTML");
     }
 
     public String getSendingResultsMessage() { return sendingResultsWindow.getText();}
 
     public boolean sendingResultSignifiesSuccess() {
-        return sendingResultsWindow.getAttribute("class").toLowerCase().contains("text-success");
+        return sendingResultsWindow.getText().toLowerCase().contains("thank you for your message");
     }
 
-    public boolean sendingResultsMessageIsVisible() {
-        return sendingResultsWindow.isDisplayed();
+    public boolean sendingResultsMessageBecomesVisible() {
+        new WebDriverWait(
+                myDriver,
+                Duration.ofSeconds(60)
+        ).until(ExpectedConditions.visibilityOf(sendingResultsWindow));
+        return true;
     }
 
     public void sendMessage() { sendButton.click();}
+
+    public boolean sendButtonIsDisabled() {
+        try {
+            return sendButton.getAttribute("disabled").equalsIgnoreCase("disabled");
+        } catch (java.lang.NullPointerException e) {
+            // if the send button does not exist, then it is not, strictly speaking, disabled
+            // if the disable attribute can not be educed, then the button os not disabled
+            return false;
+        }
+    }
 
     public boolean theFormIsVisible() {
         try {

@@ -61,7 +61,8 @@ public class chapterContact {
     @Then("an attempt to send is made")
     public void anAttemptToSendIsMade() {
         // The implementation is: the form passes control to the server-side worker, which passes control back
-        Assert.assertNotEquals("The form seems to be unchanged",
+        Assert.assertNotEquals(
+                "The form seems to be unchanged",
                 getMyPage().momentOfBirth, getMyPage().getTimestamp());
         // So there should always be some sort of response from the server-side worker
         Assert.assertTrue(
@@ -73,13 +74,13 @@ public class chapterContact {
     public void confirmationOfSendingIsShown() {
         Assert.assertTrue(
                 "The confirmation message should be visible",
-                getMyPage().sendingResultsMessageIsVisible());
+                getMyPage().sendingResultsMessageBecomesVisible());
     }
 
     @And("the sending was successful")
     public void theSendingWasSuccessful() {
         Assert.assertTrue(
-                "The confirmation message should be visible",
+                "A confirmation message should be visible",
                 getMyPage().sendingResultSignifiesSuccess());
     }
 
@@ -148,11 +149,19 @@ public class chapterContact {
                 numChars, getMyPage().getMessageField().length());
     }
 
-    @Then("the message counter field contains {int}")
-    public void theMessageCounterFieldContains(int num) {
+    @Then("the message counter field contains {string}")
+    public void theMessageCounterFieldContains(String num) {
         Assert.assertEquals("Unexpected char counter value",
                 num, getMyPage().getMessageCharCount());
     }
 
+    @Then("the submit button is disabled")
+    public void theSubmitButtonIsDisabled() {
+        Assert.assertFalse(getMyPage().sendButtonIsDisabled());
+    }
 
+    @Then("the submit button is enabled")
+    public void theSubmitButtonIsEnabled() {
+        Assert.assertTrue(getMyPage().sendButtonIsDisabled());
+    }
 }
